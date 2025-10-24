@@ -17,6 +17,7 @@ from pydantic import (
 
 """Errors"""
 
+
 class LibraryError(Exception):
     pass
 
@@ -54,6 +55,7 @@ def log_operation(function: t.Callable[P, T]) -> t.Callable[P, T]:
 
 """Models and Filters"""
 
+
 class BooksFilterField(StrEnum):
     ID = "id"
     TITLE = "title"
@@ -66,6 +68,12 @@ class BooksFilter(BaseModel):
     value: t.Any
 
 
+class Category(StrEnum):
+    ROMANCE = "romance"
+    NOVEL = "novel"
+    FICTION = "fiction"
+
+
 class User(BaseModel):
     name: StrictStr
     email: StrictStr
@@ -73,14 +81,14 @@ class User(BaseModel):
 
 
 class Book(BaseModel):
-    _CATEGORIES_BLACKLIST: t.ClassVar[list[str]] = ["romance"]
+    _CATEGORIES_BLACKLIST: t.ClassVar[list[Category]] = [Category.ROMANCE]
 
     id: StrictInt
     title: StrictStr
     author: StrictStr
     year: StrictInt
     available: StrictBool
-    categories: list[str]
+    categories: list[Category]
 
     def apply_filters(self, filters: list[BooksFilter]) -> bool:
         return all(
@@ -91,7 +99,7 @@ class Book(BaseModel):
         )
 
     @field_validator("categories")
-    def validate_categories(cls, categories: list[str]) -> list[str]:
+    def validate_categories(cls, categories: list[Category]) -> list[Category]:
         for category in categories:
             if category in cls._CATEGORIES_BLACKLIST:
                 msg_exc = f"Category `{category}` unavailable"
@@ -101,6 +109,7 @@ class Book(BaseModel):
 
 
 """Library"""
+
 
 class Library:
     def __init__(self) -> None:
@@ -114,7 +123,7 @@ class Library:
         return len(self._books)
 
     def add_book(
-        self, title: str, author: str, year: int, categories: list[str]
+        self, title: str, author: str, year: int, categories: list[Category]
     ) -> None:
         book_id = self._last_added_id + 1
         book = Book(
@@ -156,19 +165,21 @@ class Library:
 
         return not book.available
 
+
 """Initialization and testing"""
+
 
 def _init_library() -> Library:
     library = Library()
 
     titles = [f"Title {i}" for i in range(5)]
     authors = [f"Author {i}" for i in range(5)]
-    categories = [f"Catetory {i}" for i in range(10)]
+    categories = [Category.FICTION, Category.NOVEL]
 
     for _ in range(30):
         title = random.choice(titles)
         author = random.choice(authors)
-        categories_ = random.choices(categories, k=2)
+        categories_ = set(random.choices(categories, k=2))
 
         library.add_book(
             title=title,
@@ -198,7 +209,7 @@ def main():
             title="Clean Architecture",
             author="Uncle Bob",
             year=2012,
-            categories=["romance"],
+            categories=[Category.ROMANCE],
         )
     except CategoryUnavailable as exc:
         print(str(exc))
@@ -211,16 +222,16 @@ def main():
     filters = [BooksFilter(field=BooksFilterField.AUTHOR, value="Author 1")]
     found_books = library.find_books(filters)
     for book in found_books:
-        print(f"Found book: {book}")
+        print(f"Found book: {book.model_dump(mode='json')}")
     """
     Output:
-    Found book: id=2 title='Title 4' author='Author 1' year=2023 available=True categories=['Catetory 3', 'Catetory 5']
-    Found book: id=8 title='Title 4' author='Author 1' year=1990 available=True categories=['Catetory 3', 'Catetory 3']
-    Found book: id=9 title='Title 1' author='Author 1' year=2005 available=True categories=['Catetory 8', 'Catetory 0']
-    Found book: id=11 title='Title 2' author='Author 1' year=1951 available=True categories=['Catetory 3', 'Catetory 7']
-    Found book: id=16 title='Title 0' author='Author 1' year=2000 available=True categories=['Catetory 3', 'Catetory 8']
-    Found book: id=19 title='Title 2' author='Author 1' year=1916 available=True categories=['Catetory 0', 'Catetory 3']
-    Found book: id=26 title='Title 2' author='Author 1' year=1916 available=True categories=['Catetory 5', 'Catetory 1']
+    Found book: {'id': 7, 'title': 'Title 0', 'author': 'Author 1', 'year': 1944, 'available': True, 'categories': ['fiction', 'novel']}
+    Found book: {'id': 10, 'title': 'Title 4', 'author': 'Author 1', 'year': 2022, 'available': True, 'categories': ['fiction', 'novel']}
+    Found book: {'id': 11, 'title': 'Title 2', 'author': 'Author 1', 'year': 1956, 'available': True, 'categories': ['fiction', 'novel']}
+    Found book: {'id': 13, 'title': 'Title 2', 'author': 'Author 1', 'year': 2017, 'available': True, 'categories': ['novel']}
+    Found book: {'id': 14, 'title': 'Title 3', 'author': 'Author 1', 'year': 2019, 'available': True, 'categories': ['novel']}
+    Found book: {'id': 24, 'title': 'Title 0', 'author': 'Author 1', 'year': 2016, 'available': True, 'categories': ['fiction', 'novel']}
+    Found book: {'id': 28, 'title': 'Title 4', 'author': 'Author 1', 'year': 2000, 'available': True, 'categories': ['novel']}
     """
 
     # Borrow book
