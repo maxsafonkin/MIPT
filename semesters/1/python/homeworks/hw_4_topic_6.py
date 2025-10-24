@@ -17,7 +17,6 @@ from pydantic import (
 
 """Errors"""
 
-
 class LibraryError(Exception):
     pass
 
@@ -54,7 +53,6 @@ def log_operation(function: t.Callable[P, T]) -> t.Callable[P, T]:
 
 
 """Models and Filters"""
-
 
 class BooksFilterField(StrEnum):
     ID = "id"
@@ -102,8 +100,7 @@ class Book(BaseModel):
         return categories
 
 
-"""Main class - Library"""
-
+"""Library"""
 
 class Library:
     def __init__(self) -> None:
@@ -159,6 +156,7 @@ class Library:
 
         return not book.available
 
+"""Initialization and testing"""
 
 def _init_library() -> Library:
     library = Library()
