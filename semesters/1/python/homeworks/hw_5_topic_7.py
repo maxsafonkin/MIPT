@@ -15,7 +15,7 @@ def print_with_timeout() -> None:
 
 
 def task_1():
-    threads = [threading.Thread(target=pow_seq, args=pow_) for pow_ in [2, 3]]
+    threads = [threading.Thread(target=pow_seq, args=(pow_,)) for pow_ in [2, 3]]
     for t in threads:
         t.start()
 
